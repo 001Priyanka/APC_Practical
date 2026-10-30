@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Discover Authors - BlogHub{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-7">
+            <h2 class="fw-bold mb-1"><i class="bi bi-people text-primary me-2"></i>Discover Authors</h2>
+            <p class="text-muted mb-0">Explore authors, technical writers, and mentors by skills and expertise.</p>
+        </div>
+        <div class="col-md-5 mt-3 mt-md-0">
+            <form method="get" action="{% url 'accounts:author_list' %}" class="d-flex gap-2">
+                {% if skill_filter %}
+                    <input type="hidden" name="skill" value="{{ skill_filter }}">
+                {% endif %}
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0" placeholder="Search authors or skills...">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if skill_filter or search_query %}
+    <div class="d-flex align-items-center gap-2 mb-4 p-2 bg-light rounded border">
+        <span class="small text-muted">Filtered by:</span>
+        {% if search_query %}
+            <span class="badge bg-secondary">Search: "{{ search_query }}"</span>
+        {% endif %}
+        {% if skill_filter %}
+            <span class="badge bg-primary">Skill: {{ skill_filter }}</span>
+        {% endif %}
+        <a href="{% url 'accounts:author_list' %}" class="btn btn-sm btn-link text-danger text-decoration-none ms-auto p-0 small">
+            <i class="bi bi-x-circle me-1"></i>Clear Filters
+        </a>
+    </div>
+{% endif %}
+
+<div class="row g-4">
+    {% for author in authors %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 rounded-3 text-center p-4">
+                <div class="mb-3">
+                    {% if author.profile.profile_image %}
+                        <img src="{{ author.profile.profile_image.url }}" alt="{{ author.username }}" class="rounded-circle img-thumbnail shadow-sm" style="width: 90px; height: 90px; object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 90px; height: 90px; font-size: 2.2rem;">
+                            <i class="bi bi-person"></i>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <h5 class="fw-bold mb-1">
+                    <a href="{% url 'accounts:profile_detail' author.username %}" class="text-dark text-decoration-none">
+                        {% if author.get_full_name %}
+                            {{ author.get_full_name }}
+                        {% else %}
+                            {{ author.username }}
+                        {% endif %}
+                    </a>
+                </h5>
+                <p class="text-muted small mb-2">@{{ author.username }}</p>
+
+                <p class="text-muted small mb-3 text-truncate-2" style="min-height: 40px;">
+                    {{ author.profile.bio|default:"Passionate reader and writer on BlogHub."|truncatechars:80 }}
+                </p>
+
+                <!-- Skills Snippet -->
+                <div class="d-flex flex-wrap justify-content-center gap-1 mb-3" style="min-height: 28px;">
+                    {% for skill in author.profile.get_skills_list|slice:":3" %}
+                        <a href="{% url 'accounts:author_list' %}?skill={{ skill }}" class="skill-tag" style="font-size: 0.775rem; padding: 0.25rem 0.6rem;">
+                            {{ skill }}
+                        </a>
+                    {% empty %}
+                        <span class="small text-muted fst-italic">Skill explorer</span>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-auto border-top pt-3 d-flex align-items-center justify-content-between">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                        <i class="bi bi-journal-text me-1"></i>{{ author.published_blogs_count }} post{{ author.published_blogs_count|pluralize }}
+                    </span>
+                    <a href="{% url 'accounts:profile_detail' author.username %}" class="btn btn-outline-primary btn-sm fw-semibold">
+                        View Profile <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="text-muted fs-1 mb-3">
+                <i class="bi bi-person-x"></i>
+            </div>
+            <h4 class="fw-bold">No Authors Found</h4>
+            <p class="text-muted">No authors matched your search criteria. Try a different skill or search term.</p>
+            <a href="{% url 'accounts:author_list' %}" class="btn btn-primary btn-sm px-4">Browse All Authors</a>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

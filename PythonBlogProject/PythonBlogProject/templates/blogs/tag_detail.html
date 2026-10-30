@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}#{{ tag.name }} Articles - BlogHub{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small mb-2">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'blogs:blog_list' %}">Blogs</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Tag</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-1">
+                <span class="text-primary">#{{ tag.name }}</span> Articles
+            </h2>
+            <p class="text-muted mb-0">Browsing all published community articles tagged with #{{ tag.name }}.</p>
+        </div>
+        <div>
+            <span class="badge bg-light text-dark border px-3 py-2 fs-6">
+                <i class="bi bi-tag-fill text-primary me-1"></i>{{ total_count }} post{{ total_count|pluralize }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 my-2">
+    {% for blog in blogs %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden d-flex flex-column">
+                {% if blog.cover_image %}
+                    <a href="{% url 'blogs:blog_detail' blog.slug %}">
+                        <img src="{{ blog.cover_image.url }}" class="card-img-top" alt="{{ blog.title }}" style="height: 180px; object-fit: cover;">
+                    </a>
+                {% else %}
+                    <div class="bg-light text-center py-4 border-bottom text-muted" style="height: 180px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-journal-code display-4 text-secondary opacity-50"></i>
+                    </div>
+                {% endif %}
+
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        {% if blog.category %}
+                            <a href="{% url 'blogs:blog_list' %}?category={{ blog.category.slug }}" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none">
+                                {{ blog.category.name }}
+                            </a>
+                        {% else %}
+                            <span class="badge bg-light text-muted border">General</span>
+                        {% endif %}
+                        <span class="small text-muted"><i class="bi bi-clock me-1"></i>{{ blog.reading_time_minutes }} min</span>
+                    </div>
+
+                    <h5 class="card-title fw-bold mb-2">
+                        <a href="{% url 'blogs:blog_detail' blog.slug %}" class="text-dark text-decoration-none">
+                            {{ blog.title }}
+                        </a>
+                    </h5>
+
+                    <p class="card-text text-muted small mb-3 flex-grow-1">
+                        {{ blog.excerpt|default:blog.content|truncatewords:20 }}
+                    </p>
+
+                    <div class="d-flex align-items-center justify-content-between pt-3 border-top mt-auto">
+                        <div class="d-flex align-items-center">
+                            {% if blog.author.profile.profile_image %}
+                                <img src="{{ blog.author.profile.profile_image.url }}" alt="{{ blog.author.username }}" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                            {% endif %}
+                            <a href="{% url 'accounts:profile_detail' blog.author.username }}" class="text-dark small fw-semibold text-decoration-none">
+                                {{ blog.author.get_full_name|default:blog.author.username }}
+                            </a>
+                        </div>
+                        <a href="{% url 'blogs:blog_detail' blog.slug %}" class="btn btn-outline-primary btn-sm">
+                            Read <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="text-muted fs-1 mb-3">
+                <i class="bi bi-tag"></i>
+            </div>
+            <h4 class="fw-bold">No Articles with Tag #{{ tag.name }}</h4>
+            <p class="text-muted">There are currently no published articles with this tag.</p>
+            <a href="{% url 'blogs:blog_list' %}" class="btn btn-primary btn-sm px-4">Explore All Blogs</a>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+    <nav class="mt-4" aria-label="Tag pagination">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Prev</a></li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">&laquo; Prev</span></li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next &raquo;</a></li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+{% endif %}
+{% endblock %}

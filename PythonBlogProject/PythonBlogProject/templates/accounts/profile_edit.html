@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile - BlogHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-header bg-white border-bottom p-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h3 class="fw-bold mb-1"><i class="bi bi-person-gear text-primary me-2"></i>Edit Your Profile</h3>
+                        <p class="text-muted small mb-0">Update your public details, bio, skills, and avatar.</p>
+                    </div>
+                    <a href="{% url 'accounts:profile_detail' user.username %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-eye me-1"></i> View Public Profile
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+
+                    {% if user_form.non_field_errors or profile_form.non_field_errors %}
+                        <div class="alert alert-danger shadow-sm">
+                            {% for error in user_form.non_field_errors %}
+                                <p class="mb-0"><i class="bi bi-exclamation-triangle me-1"></i>{{ error }}</p>
+                            {% endfor %}
+                            {% for error in profile_form.non_field_errors %}
+                                <p class="mb-0"><i class="bi bi-exclamation-triangle me-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Avatar Section -->
+                    <div class="d-flex align-items-center gap-4 mb-4 pb-3 border-bottom">
+                        <div class="text-center">
+                            {% if user.profile.profile_image %}
+                                <img src="{{ user.profile.profile_image.url }}" alt="{{ user.username }}" class="rounded-circle img-thumbnail shadow-sm" style="width: 100px; height: 100px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <label for="{{ profile_form.profile_image.id_for_label }}" class="form-label fw-semibold">
+                                Profile Avatar Photo
+                            </label>
+                            {{ profile_form.profile_image }}
+                            <div class="form-text small">Accepted formats: JPG, PNG, WEBP (Max 2MB).</div>
+                            {% if profile_form.profile_image.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in profile_form.profile_image.errors %}
+                                        <div><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Personal Information -->
+                    <h5 class="fw-bold mb-3 text-secondary"><i class="bi bi-person me-2"></i>Basic Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ user_form.first_name.id_for_label }}" class="form-label fw-semibold">First Name</label>
+                            {{ user_form.first_name }}
+                            {% if user_form.first_name.errors %}
+                                <div class="text-danger small mt-1">{{ user_form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ user_form.last_name.id_for_label }}" class="form-label fw-semibold">Last Name</label>
+                            {{ user_form.last_name }}
+                            {% if user_form.last_name.errors %}
+                                <div class="text-danger small mt-1">{{ user_form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ user_form.email.id_for_label }}" class="form-label fw-semibold">
+                            Email Address <span class="text-danger">*</span>
+                        </label>
+                        {{ user_form.email }}
+                        <div class="form-text small">Your email is kept confidential and is not published on your public author page.</div>
+                        {% if user_form.email.errors %}
+                            <div class="text-danger small mt-1">{{ user_form.email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Bio, Skills, and Interests -->
+                    <h5 class="fw-bold mb-3 text-secondary"><i class="bi bi-lightbulb me-2"></i>Skills & Background</h5>
+                    
+                    <div class="mb-3">
+                        <label for="{{ profile_form.bio.id_for_label }}" class="form-label fw-semibold">Personal Bio</label>
+                        {{ profile_form.bio }}
+                        <div class="form-text small">Tell the BlogHub community about your work, journey, and technical passions.</div>
+                        {% if profile_form.bio.errors %}
+                            <div class="text-danger small mt-1">{{ profile_form.bio.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ profile_form.skills.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-tools text-primary me-1"></i> Skills
+                        </label>
+                        {{ profile_form.skills }}
+                        <div class="form-text small">{{ profile_form.skills.help_text }}</div>
+                        {% if profile_form.skills.errors %}
+                            <div class="text-danger small mt-1">{{ profile_form.skills.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ profile_form.interests.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-heart text-danger me-1"></i> Interests & Topics
+                        </label>
+                        {{ profile_form.interests }}
+                        <div class="form-text small">{{ profile_form.interests.help_text }}</div>
+                        {% if profile_form.interests.errors %}
+                            <div class="text-danger small mt-1">{{ profile_form.interests.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                        <a href="{% url 'accounts:profile_detail' user.username %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <i class="bi bi-check2 me-1"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

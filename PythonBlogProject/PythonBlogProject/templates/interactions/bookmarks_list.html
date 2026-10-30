@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Saved Bookmarks - BlogHub{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="bi bi-bookmark-heart text-primary me-2"></i>Saved Bookmarks</h2>
+            <p class="text-muted mb-0">Articles and tutorials you have saved to read and explore later.</p>
+        </div>
+        <div>
+            <span class="badge bg-light text-dark border px-3 py-2 fs-6">
+                <i class="bi bi-bookmark-check text-primary me-1"></i>{{ total_bookmarks }} saved
+            </span>
+        </div>
+    </div>
+</div>
+
+{% if bookmarks %}
+    <div class="row g-4 my-2">
+        {% for bookmark in bookmarks %}
+            {% with blog=bookmark.blog %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden d-flex flex-column">
+                        {% if blog.cover_image %}
+                            <a href="{% url 'blogs:blog_detail' blog.slug %}">
+                                <img src="{{ blog.cover_image.url }}" class="card-img-top" alt="{{ blog.title }}" style="height: 180px; object-fit: cover;">
+                            </a>
+                        {% else %}
+                            <div class="bg-light text-center py-4 border-bottom text-muted" style="height: 180px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-journal-code display-4 text-secondary opacity-50"></i>
+                            </div>
+                        {% endif %}
+
+                        <div class="card-body p-4 d-flex flex-column">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                {% if blog.category %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                        {{ blog.category.name }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-muted border">General</span>
+                                {% endif %}
+                                <span class="small text-muted"><i class="bi bi-clock me-1"></i>{{ blog.reading_time_minutes }} min</span>
+                            </div>
+
+                            <h5 class="card-title fw-bold mb-2">
+                                <a href="{% url 'blogs:blog_detail' blog.slug %}" class="text-dark text-decoration-none">
+                                    {{ blog.title }}
+                                </a>
+                            </h5>
+
+                            <p class="card-text text-muted small mb-3 flex-grow-1">
+                                {{ blog.excerpt|default:blog.content|truncatewords:20 }}
+                            </p>
+
+                            <div class="d-flex align-items-center justify-content-between pt-3 border-top mt-auto">
+                                <div class="d-flex align-items-center">
+                                    {% if blog.author.profile.profile_image %}
+                                        <img src="{{ blog.author.profile.profile_image.url }}" alt="{{ blog.author.username }}" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px; font-size: 0.8rem;">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                    {% endif %}
+                                    <span class="small text-dark fw-semibold">{{ blog.author.get_full_name|default:blog.author.username }}</span>
+                                </div>
+
+                                <div class="d-flex gap-1">
+                                    <form method="post" action="{% url 'interactions:toggle_bookmark' blog.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{% url 'interactions:bookmarks_list' %}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Remove bookmark">
+                                            <i class="bi bi-bookmark-x"></i>
+                                        </button>
+                                    </form>
+                                    <a href="{% url 'blogs:blog_detail' blog.slug %}" class="btn btn-primary btn-sm">
+                                        Read <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+        <nav class="mt-4" aria-label="Bookmarks pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Prev</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo; Prev</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next &raquo;</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+
+{% else %}
+    <div class="card shadow-sm border-0 rounded-4 text-center p-5">
+        <div class="text-muted display-4 mb-3"><i class="bi bi-bookmark-plus"></i></div>
+        <h4 class="fw-bold">No Bookmarks Saved</h4>
+        <p class="text-muted">You haven't saved any articles yet. When browsing articles, click the bookmark button to save them here for later reading.</p>
+        <div>
+            <a href="{% url 'blogs:blog_list' %}" class="btn btn-primary px-4 fw-semibold">
+                Explore Community Blogs
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

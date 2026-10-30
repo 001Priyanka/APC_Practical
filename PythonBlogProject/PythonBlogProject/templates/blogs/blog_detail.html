@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ blog.title }} - BlogHub{% endblock %}
+
+{% block content %}
+<article class="row justify-content-center my-3">
+    <div class="col-lg-9">
+        <!-- Draft Warning Banner (Visible only to the Author) -->
+        {% if blog.status == 'draft' %}
+            <div class="alert alert-warning border-warning shadow-sm d-flex align-items-center justify-content-between mb-4" role="alert">
+                <div>
+                    <i class="bi bi-eye-slash-fill me-2 fs-5"></i>
+                    <strong>Private Draft Preview:</strong> This post is currently unpublished and is visible only to you.
+                </div>
+                <a href="{% url 'blogs:blog_update' blog.slug %}" class="btn btn-sm btn-warning text-dark fw-semibold">
+                    <i class="bi bi-pencil me-1"></i> Edit & Publish
+                </a>
+            </div>
+        {% endif %}
+
+        <!-- Header Category & Meta -->
+        <div class="mb-3">
+            {% if blog.category %}
+                <a href="{% url 'blogs:blog_list' %}?category={{ blog.category.slug }}" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none px-3 py-2 mb-2">
+                    {{ blog.category.name }}
+                </a>
+            {% endif %}
+            <h1 class="display-5 fw-bold mb-3">{{ blog.title }}</h1>
+            
+            {% if blog.excerpt %}
+                <p class="lead text-muted mb-4">{{ blog.excerpt }}</p>
+            {% endif %}
+
+            <!-- Author & Metadata Bar -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between p-3 bg-light rounded-3 border mb-4">
+                <div class="d-flex align-items-center mb-2 mb-md-0">
+                    {% if blog.author.profile.profile_image %}
+                        <img src="{{ blog.author.profile.profile_image.url }}" alt="{{ blog.author.username }}" class="rounded-circle me-3" style="width: 48px; height: 48px; object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; font-size: 1.3rem;">
+                            <i class="bi bi-person"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <a href="{% url 'accounts:profile_detail' blog.author.username %}" class="text-dark fw-bold text-decoration-none">
+                            {{ blog.author.get_full_name|default:blog.author.username }}
+                        </a>
+                        <div class="text-muted small">
+                            <span><i class="bi bi-calendar3 me-1"></i>Published: {{ blog.created_date|date:"F d, Y" }}</span>
+                            {% if blog.updated_date|date:"U" != blog.created_date|date:"U" %}
+                                <span class="ms-2"><i class="bi bi-pencil-square me-1"></i>Updated: {{ blog.updated_date|date:"M d, Y" }}</span>
+                            {% endif %}
+                            <span class="ms-2"><i class="bi bi-clock me-1"></i>{{ blog.reading_time_minutes }} min read</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Author Action Controls -->
+                {% if is_author %}
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'blogs:blog_update' blog.slug %}" class="btn btn-outline-primary btn-sm fw-semibold">
+                            <i class="bi bi-pencil me-1"></i> Edit Post
+                        </a>
+                        <a href="{% url 'blogs:blog_delete' blog.slug %}" class="btn btn-outline-danger btn-sm fw-semibold">
+                            <i class="bi bi-trash me-1"></i> Delete
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Cover Image -->
+        {% if blog.cover_image %}
+            <div class="mb-5 text-center">
+                <img src="{{ blog.cover_image.url }}" alt="{{ blog.title }}" class="img-fluid rounded-4 shadow-sm w-100" style="max-height: 480px; object-fit: cover;">
+            </div>
+        {% endif %}
+
+        <!-- Blog Main Content -->
+        <div class="article-reading-content mb-5" style="white-space: pre-wrap;">{{ blog.content }}</div>
+
+        <!-- Tags List -->
+        {% if blog.tags.all %}
+            <div class="d-flex align-items-center flex-wrap gap-2 pt-4 border-top mb-4">
+                <span class="text-secondary fw-semibold small me-1"><i class="bi bi-tags me-1"></i>Tags:</span>
+                {% for tag in blog.tags.all %}
+                    <a href="{% url 'blogs:tag_detail' tag.slug %}" class="skill-tag">
+                        #{{ tag.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Engagement Bar: Likes, Bookmarks & Jump to Comments -->
+        {% if blog.status == 'published' %}
+            <div id="reactions" class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 border mb-5">
+                <div class="d-flex align-items-center gap-3">
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'interactions:toggle_like' blog.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm {% if is_liked %}btn-danger{% else %}btn-outline-danger{% endif %} d-inline-flex align-items-center gap-1">
+                                <i class="bi {% if is_liked %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                                <span>{{ likes_count }}</span>
+                            </button>
+                        </form>
+
+                        <form method="post" action="{% url 'interactions:toggle_bookmark' blog.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm {% if is_bookmarked %}btn-primary{% else %}btn-outline-primary{% endif %} d-inline-flex align-items-center gap-1">
+                                <i class="bi {% if is_bookmarked %}bi-bookmark-check-fill{% else %}bi-bookmark{% endif %}"></i>
+                                <span>{% if is_bookmarked %}Saved{% else %}Bookmark{% endif %}</span>
+                            </button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-heart"></i>
+                            <span>{{ likes_count }}</span>
+                        </a>
+                        <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-bookmark"></i>
+                            <span>Bookmark</span>
+                        </a>
+                    {% endif %}
+                </div>
+
+                <a href="#comments" class="text-secondary text-decoration-none small fw-semibold">
+                    <i class="bi bi-chat-left-text me-1"></i>{{ comments.count }} comment{{ comments.count|pluralize }}
+                </a>
+            </div>
+        {% endif %}
+
+        <!-- Author Profile Footer Box -->
+        <div class="card shadow-sm border-0 rounded-4 bg-light p-4 mb-5">
+            <div class="d-flex flex-column flex-md-row align-items-center align-items-md-start gap-4">
+                {% if blog.author.profile.profile_image %}
+                    <img src="{{ blog.author.profile.profile_image.url }}" alt="{{ blog.author.username }}" class="rounded-circle shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 80px; height: 80px; font-size: 2.2rem;">
+                        <i class="bi bi-person"></i>
+                    </div>
+                {% endif %}
+                <div class="flex-grow-1 text-center text-md-start">
+                    <h5 class="fw-bold mb-1">
+                        Written by 
+                        <a href="{% url 'accounts:profile_detail' blog.author.username %}" class="text-dark text-decoration-none">
+                            {{ blog.author.get_full_name|default:blog.author.username }}
+                        </a>
+                    </h5>
+                    <p class="text-muted small mb-2">
+                        {{ blog.author.profile.bio|default:"Author and contributor on BlogHub." }}
+                    </p>
+                    {% if blog.author.profile.get_skills_list %}
+                        <div class="d-flex flex-wrap gap-1 mb-3 justify-content-center justify-content-md-start">
+                            {% for skill in blog.author.profile.get_skills_list %}
+                                <span class="badge bg-white text-secondary border small">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <a href="{% url 'accounts:profile_detail' blog.author.username %}" class="btn btn-outline-primary btn-sm fw-semibold">
+                        View Author Profile & More Articles <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comments Discussion Section -->
+        {% if blog.status == 'published' %}
+            <div id="comments" class="mb-5 pt-3">
+                <h4 class="fw-bold mb-3">
+                    <i class="bi bi-chat-square-text text-primary me-2"></i>Discussion ({{ comments.count }})
+                </h4>
+
+                <!-- Add Comment Form -->
+                {% if user.is_authenticated %}
+                    <div class="card shadow-sm border-0 rounded-4 p-4 mb-4">
+                        <form method="post" action="{% url 'interactions:add_comment' blog.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="id_content" class="form-label fw-semibold">Leave a comment</label>
+                                {{ comment_form.content }}
+                            </div>
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold">
+                                    <i class="bi bi-send me-1"></i> Post Comment
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                {% else %}
+                    <div class="alert alert-light border rounded-3 p-3 mb-4 d-flex align-items-center justify-content-between">
+                        <span class="text-muted small">
+                            <i class="bi bi-lock me-1"></i> Log in to join the conversation and leave a comment.
+                        </span>
+                        <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-sm btn-outline-primary">
+                            Log In
+                        </a>
+                    </div>
+                {% endif %}
+
+                <!-- Comments List -->
+                {% if comments %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for comment in comments %}
+                            <div class="card shadow-sm border-0 rounded-3 p-3">
+                                <div class="d-flex align-items-start justify-content-between mb-2">
+                                    <div class="d-flex align-items-center">
+                                        {% if comment.user.profile.profile_image %}
+                                            <img src="{{ comment.user.profile.profile_image.url }}" alt="{{ comment.user.username }}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                                                <i class="bi bi-person"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <a href="{% url 'accounts:profile_detail' comment.user.username %}" class="fw-semibold text-dark text-decoration-none small">
+                                                {{ comment.user.get_full_name|default:comment.user.username }}
+                                            </a>
+                                            {% if comment.user == blog.author %}
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.65rem;">Author</span>
+                                            {% endif %}
+                                            <span class="text-muted small ms-2">&bull; {{ comment.created_date|timesince }} ago</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Delete Comment (Only comment author or blog owner) -->
+                                    {% if user == comment.user or user == blog.author %}
+                                        <form method="post" action="{% url 'interactions:delete_comment' comment.id %}" onsubmit="return confirm('Are you sure you want to delete this comment?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm text-danger p-0 border-0" title="Delete comment">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-0 text-secondary" style="white-space: pre-wrap; font-size: 0.95rem;">{{ comment.content }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 bg-light rounded-3 border">
+                        <p class="text-muted small mb-0">No comments yet. Be the first to share your thoughts!</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- Related Articles -->
+        {% if related_blogs %}
+            <div class="mt-5">
+                <h4 class="fw-bold mb-3"><i class="bi bi-grid-fill text-primary me-2"></i>More in this Category</h4>
+                <div class="row g-3">
+                    {% for related in related_blogs %}
+                        <div class="col-md-4">
+                            <div class="card h-100 shadow-sm border-0 rounded-3">
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <h6 class="fw-bold mb-2">
+                                        <a href="{% url 'blogs:blog_detail' related.slug %}" class="text-dark text-decoration-none">
+                                            {{ related.title|truncatechars:60 }}
+                                        </a>
+                                    </h6>
+                                    <p class="small text-muted flex-grow-1 mb-2">{{ related.excerpt|default:related.content|truncatewords:15 }}</p>
+                                    <div class="small text-muted border-top pt-2 mt-auto d-flex justify-content-between">
+                                        <span>{{ related.author.username }}</span>
+                                        <span>{{ related.reading_time_minutes }} min read</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</article>
+{% endblock %}

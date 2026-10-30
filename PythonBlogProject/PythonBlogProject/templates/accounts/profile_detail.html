@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ author.username }}'s Profile - BlogHub{% endblock %}
+
+{% block content %}
+<div class="row g-4 my-2">
+    <!-- Left Column: Author Bio & Details Card -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 rounded-3 text-center p-4">
+            <div class="mb-3">
+                {% if profile.profile_image %}
+                    <img src="{{ profile.profile_image.url }}" alt="{{ author.username }}" class="rounded-circle img-thumbnail shadow-sm" style="width: 130px; height: 130px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 130px; height: 130px; font-size: 3.5rem;">
+                        <i class="bi bi-person"></i>
+                    </div>
+                {% endif %}
+            </div>
+
+            <h3 class="fw-bold mb-1">
+                {% if author.get_full_name %}
+                    {{ author.get_full_name }}
+                {% else %}
+                    {{ author.username }}
+                {% endif %}
+            </h3>
+            <p class="text-muted small mb-3">@{{ author.username }}</p>
+
+            {% if is_owner %}
+                <div class="mb-3">
+                    <a href="{% url 'accounts:profile_edit' %}" class="btn btn-outline-primary btn-sm w-100 fw-semibold">
+                        <i class="bi bi-pencil-square me-1"></i> Edit Profile
+                    </a>
+                </div>
+            {% endif %}
+
+            <div class="text-start border-top pt-3">
+                {% if profile.bio %}
+                    <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-info-circle me-1"></i> About</h6>
+                    <p class="small text-muted mb-3">{{ profile.bio }}</p>
+                {% else %}
+                    <p class="small text-muted fst-italic mb-3">No bio provided yet.</p>
+                {% endif %}
+
+                <!-- Skills Badges -->
+                <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-tools text-primary me-1"></i> Skills & Expertise</h6>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% if skills_list %}
+                        {% for skill in skills_list %}
+                            <a href="{% url 'accounts:author_list' %}?skill={{ skill }}" class="skill-tag">
+                                <i class="bi bi-check2 text-primary me-1"></i>{{ skill }}
+                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <span class="small text-muted fst-italic">No skills listed yet.</span>
+                    {% endif %}
+                </div>
+
+                <!-- Interests Badges -->
+                <h6 class="fw-bold text-secondary mb-2"><i class="bi bi-heart text-danger me-1"></i> Favorite Topics</h6>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% if interests_list %}
+                        {% for interest in interests_list %}
+                            <span class="skill-tag bg-white">
+                                <i class="bi bi-tag text-muted me-1"></i>{{ interest }}
+                            </span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="small text-muted fst-italic">No interests listed yet.</span>
+                    {% endif %}
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between text-muted small">
+                    <span><i class="bi bi-calendar3 me-1"></i> Member Since:</span>
+                    <span class="fw-semibold">{{ author.date_joined|date:"M Y" }}</span>
+                </div>
+
+                <div class="d-flex justify-content-between text-muted small mt-2">
+                    <span><i class="bi bi-journal-text me-1"></i> Published Blogs:</span>
+                    <span class="fw-semibold badge bg-primary rounded-pill">{{ blogs.count }}</span>
+                </div>
+
+                {% if is_owner %}
+                    <div class="d-flex justify-content-between text-muted small mt-2">
+                        <span><i class="bi bi-file-earmark me-1"></i> Drafts (Private):</span>
+                        <span class="fw-semibold badge bg-warning text-dark rounded-pill">{{ draft_count }}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Author's Published Blogs -->
+    <div class="col-lg-8">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h4 class="fw-bold mb-0">
+                <i class="bi bi-collection text-primary me-2"></i>Published Articles
+            </h4>
+            <span class="text-muted small">{{ blogs.count }} post{{ blogs.count|pluralize }}</span>
+        </div>
+
+        {% if blogs %}
+            <div class="row g-3">
+                {% for blog in blogs %}
+                    <div class="col-12">
+                        <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    {% if blog.category %}
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                            {{ blog.category.name }}
+                                        </span>
+                                    {% endif %}
+                                    <span class="text-muted small">&bull;</span>
+                                    <span class="text-muted small">
+                                        <i class="bi bi-calendar-event me-1"></i>{{ blog.created_date|date:"F d, Y" }}
+                                    </span>
+                                    <span class="text-muted small">&bull;</span>
+                                    <span class="text-muted small">
+                                        <i class="bi bi-clock me-1"></i>{{ blog.reading_time_minutes }} min read
+                                    </span>
+                                </div>
+
+                                <h5 class="fw-bold mb-2">
+                                    <a href="{% url 'blogs:blog_detail' blog.slug %}" class="text-dark text-decoration-none">
+                                        {{ blog.title }}
+                                    </a>
+                                </h5>
+
+                                <p class="text-muted mb-3">
+                                    {{ blog.excerpt|default:blog.content|truncatewords:30 }}
+                                </p>
+
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for tag in blog.tags.all %}
+                                            <span class="badge bg-secondary-subtle text-secondary small">#{{ tag.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    <a href="{% url 'blogs:blog_detail' blog.slug %}" class="btn btn-outline-primary btn-sm fw-semibold">
+                                        Read Article <i class="bi bi-arrow-right ms-1"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card shadow-sm border-0 rounded-3 text-center p-5">
+                <div class="text-muted fs-1 mb-2">
+                    <i class="bi bi-journal-x"></i>
+                </div>
+                <h5 class="fw-bold">No Published Blogs Yet</h5>
+                <p class="text-muted small mb-3">
+                    {% if is_owner %}
+                        You haven't published any articles yet. Share your technical thoughts with the community!
+                    {% else %}
+                        This author has not published any articles yet. Check back soon!
+                    {% endif %}
+                </p>
+                {% if is_owner %}
+                    <div>
+                        <a href="{% url 'blogs:blog_create' %}" class="btn btn-primary btn-sm px-3 fw-semibold">
+                            <i class="bi bi-pencil-square me-1"></i> Write Your First Blog
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

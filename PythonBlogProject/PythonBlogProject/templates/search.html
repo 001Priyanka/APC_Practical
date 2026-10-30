@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Search{% if search_query %}: "{{ search_query }}"{% endif %} - BlogHub{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+            <h2 class="fw-bold mb-2"><i class="bi bi-search text-primary me-2"></i>Global Search</h2>
+            <p class="text-muted mb-4">Find articles by topic, keywords, or discover authors by their technical skills.</p>
+            
+            <form method="get" action="{% url 'search' %}" class="mb-4">
+                <input type="hidden" name="tab" value="{{ active_tab }}">
+                <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                    <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search articles, topics, skills, or authors..." autofocus>
+                    <button class="btn btn-primary px-4 fw-semibold" type="submit">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if search_query %}
+    <!-- Result Filter Tabs -->
+    <ul class="nav nav-pills justify-content-center mb-4 border-bottom pb-3">
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'blogs' %}active{% endif %} px-4 fw-semibold" href="{% url 'search' %}?q={{ search_query }}&tab=blogs">
+                <i class="bi bi-journal-text me-1"></i> Articles <span class="badge {% if active_tab == 'blogs' %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ blogs_count }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'authors' %}active{% endif %} px-4 fw-semibold" href="{% url 'search' %}?q={{ search_query }}&tab=authors">
+                <i class="bi bi-people me-1"></i> Authors <span class="badge {% if active_tab == 'authors' %}bg-white text-primary{% else %}bg-secondary{% endif %} ms-1">{{ authors_count }}</span>
+            </a>
+        </li>
+    </ul>
+
+    <!-- Tab 1: Blogs Results -->
+    {% if active_tab == 'blogs' %}
+        {% if blogs %}
+            <div class="row g-4 mb-4">
+                {% for blog in blogs %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden d-flex flex-column">
+                            {% if blog.cover_image %}
+                                <a href="{% url 'blogs:blog_detail' blog.slug %}">
+                                    <img src="{{ blog.cover_image.url }}" class="card-img-top" alt="{{ blog.title }}" style="height: 180px; object-fit: cover;">
+                                </a>
+                            {% else %}
+                                <div class="bg-light text-center py-4 border-bottom text-muted" style="height: 180px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-journal-code display-4 text-secondary opacity-50"></i>
+                                </div>
+                            {% endif %}
+
+                            <div class="card-body p-4 d-flex flex-column">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    {% if blog.category %}
+                                        <a href="{% url 'blogs:blog_list' %}?category={{ blog.category.slug }}" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none">
+                                            {{ blog.category.name }}
+                                        </a>
+                                    {% endif %}
+                                    <span class="small text-muted"><i class="bi bi-clock me-1"></i>{{ blog.reading_time_minutes }} min</span>
+                                </div>
+
+                                <h5 class="card-title fw-bold mb-2">
+                                    <a href="{% url 'blogs:blog_detail' blog.slug %}" class="text-dark text-decoration-none">
+                                        {{ blog.title }}
+                                    </a>
+                                </h5>
+
+                                <p class="card-text text-muted small mb-3 flex-grow-1">
+                                    {{ blog.excerpt|default:blog.content|truncatewords:20 }}
+                                </p>
+
+                                <div class="d-flex align-items-center justify-content-between pt-3 border-top mt-auto">
+                                    <div class="d-flex align-items-center">
+                                        {% if blog.author.profile.profile_image %}
+                                            <img src="{{ blog.author.profile.profile_image.url }}" alt="{{ blog.author.username }}" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                                <i class="bi bi-person"></i>
+                                            </div>
+                                        {% endif %}
+                                        <a href="{% url 'accounts:profile_detail' blog.author.username }}" class="text-dark small fw-semibold text-decoration-none">
+                                            {{ blog.author.get_full_name|default:blog.author.username }}
+                                        </a>
+                                    </div>
+                                    <a href="{% url 'blogs:blog_detail' blog.slug %}" class="btn btn-outline-primary btn-sm">
+                                        Read <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <nav class="mt-4" aria-label="Search pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?q={{ search_query }}&tab=blogs&page={{ page_obj.previous_page_number }}">&laquo; Prev</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo; Prev</span></li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                <a class="page-link" href="?q={{ search_query }}&tab=blogs&page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link" href="?q={{ search_query }}&tab=blogs&page={{ page_obj.next_page_number }}">Next &raquo;</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+
+        {% else %}
+            <div class="card shadow-sm border-0 rounded-4 text-center p-5">
+                <div class="text-muted display-4 mb-3"><i class="bi bi-journal-x"></i></div>
+                <h4 class="fw-bold">No Articles Found</h4>
+                <p class="text-muted">No published articles matched "{{ search_query }}". Try checking for spelling or using more general keywords.</p>
+                <div>
+                    <a href="{% url 'blogs:blog_list' %}" class="btn btn-outline-primary px-4">Browse All Published Blogs</a>
+                </div>
+            </div>
+        {% endif %}
+
+    <!-- Tab 2: Authors Results -->
+    {% elif active_tab == 'authors' %}
+        {% if authors %}
+            <div class="row g-4 mb-4">
+                {% for author in authors %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm border-0 rounded-3 text-center p-4">
+                            <div class="mb-3">
+                                {% if author.profile.profile_image %}
+                                    <img src="{{ author.profile.profile_image.url }}" alt="{{ author.username }}" class="rounded-circle img-thumbnail shadow-sm" style="width: 85px; height: 85px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 85px; height: 85px; font-size: 2rem;">
+                                        <i class="bi bi-person"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <h5 class="fw-bold mb-1">
+                                <a href="{% url 'accounts:profile_detail' author.username %}" class="text-dark text-decoration-none">
+                                    {{ author.get_full_name|default:author.username }}
+                                </a>
+                            </h5>
+                            <p class="text-muted small mb-2">@{{ author.username }}</p>
+
+                            <p class="text-muted small mb-3 text-truncate-2">
+                                {{ author.profile.bio|default:"BlogHub writer and reader."|truncatechars:80 }}
+                            </p>
+
+                            <div class="d-flex flex-wrap justify-content-center gap-1 mb-3">
+                                {% for skill in author.profile.get_skills_list|slice:":3" %}
+                                    <a href="{% url 'accounts:author_list' %}?skill={{ skill }}" class="skill-tag" style="font-size: 0.775rem; padding: 0.25rem 0.6rem;">
+                                        {{ skill }}
+                                    </a>
+                                {% empty %}
+                                    <span class="small text-muted fst-italic">Skill explorer</span>
+                                {% endfor %}
+                            </div>
+
+                            <div class="mt-auto border-top pt-3 d-flex align-items-center justify-content-between">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                    <i class="bi bi-journal-text me-1"></i>{{ author.published_blogs_count }} post{{ author.published_blogs_count|pluralize }}
+                                </span>
+                                <a href="{% url 'accounts:profile_detail' author.username %}" class="btn btn-outline-primary btn-sm fw-semibold">
+                                    View Profile <i class="bi bi-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card shadow-sm border-0 rounded-4 text-center p-5">
+                <div class="text-muted display-4 mb-3"><i class="bi bi-person-x"></i></div>
+                <h4 class="fw-bold">No Authors Found</h4>
+                <p class="text-muted">No authors or skill profiles matched "{{ search_query }}".</p>
+                <div>
+                    <a href="{% url 'accounts:author_list' %}" class="btn btn-outline-primary px-4">Browse Author Directory</a>
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+
+{% else %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6 text-center py-5">
+            <div class="text-muted display-4 mb-3"><i class="bi bi-compass"></i></div>
+            <h4 class="fw-bold">Search Across the Community</h4>
+            <p class="text-muted">Enter a search query in the box above to find articles and authors by topic or skill.</p>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

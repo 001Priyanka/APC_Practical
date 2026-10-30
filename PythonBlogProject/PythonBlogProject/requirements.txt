@@ -1,0 +1,13 @@
+# Core Framework
+Django>=5.0.0,<5.2.0
+
+# Environment and Configuration
+python-dotenv>=1.0.0
+
+# Database Drivers
+# PyMySQL is pure-Python and avoids Visual C++ compiler issues on Windows
+pymysql>=1.1.0
+cryptography>=41.0.0
+
+# Media and Image Processing
+Pillow>=10.0.0
